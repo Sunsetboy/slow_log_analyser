@@ -23,9 +23,12 @@ class SlowQuery:
     query_text: str = ""
     duration: float = 0.0
     rows_examined: int = 0
+    count: int = 1
 
     def __str__(self):
-        return f"{self.query_text}\n Took {self.duration} seconds, rows examined: {self.rows_examined}"
+        return f"""{self.query_text}\n 
+Took {self.duration:.3f} seconds (total), rows examined: {self.rows_examined}, count: {self.count}
+"""
 
 
 # dictionary to store slow queries, key is query text
@@ -41,6 +44,14 @@ with open(log_file_path, "r") as file:
 
         if line.startswith("# Time:"):
             if current_slow_query:
+                if current_slow_query.query_text in slow_queries:
+                    # if this query is already in the dictionary, increment count
+                    current_slow_query.count = (
+                        slow_queries[current_slow_query.query_text].count + 1
+                    )
+                    current_slow_query.duration += slow_queries[
+                        current_slow_query.query_text
+                    ].duration
                 slow_queries[current_slow_query.query_text] = current_slow_query
             current_slow_query = SlowQuery()
             continue
