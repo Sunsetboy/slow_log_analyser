@@ -23,11 +23,12 @@ class SlowQuery:
     query_text: str = ""
     duration: float = 0.0
     rows_examined: int = 0
+    rows_sent: int = 0
     count: int = 1
 
     def __str__(self):
         return f"""{self.query_text}\n 
-Took {self.duration:.3f} seconds (total), rows examined: {self.rows_examined}, count: {self.count}
+Took {self.duration:.3f} seconds (total), rows examined: {self.rows_examined}, sent: {self.rows_sent}, count: {self.count}
 """
 
 
@@ -52,20 +53,25 @@ with open(log_file_path, "r") as file:
                     current_slow_query.duration += slow_queries[
                         current_slow_query.query_text
                     ].duration
+                    current_slow_query.rows_sent += slow_queries[
+                        current_slow_query.query_text
+                    ].rows_sent
                 slow_queries[current_slow_query.query_text] = current_slow_query
             current_slow_query = SlowQuery()
             continue
 
         if line.startswith("# Query_time:"):
-            pattern = r"Query_time:\s([\d.]+).*Rows_examined:\s(\d+)"
+            pattern = r"Query_time:\s([\d.]+).*Rows_sent:\s(\d+).*Rows_examined:\s(\d+)"
 
             # Search for the pattern in the string
             match = re.search(pattern, line)
             if match:
                 query_time = float(match.group(1))
-                rows_examined = int(match.group(2))
+                rows_sent = int(match.group(2))
+                rows_examined = int(match.group(3))
                 current_slow_query.duration = query_time
                 current_slow_query.rows_examined = rows_examined
+                current_slow_query.rows_sent = rows_sent
             continue
 
         if line.startswith("SET timestamp") or line.startswith("# User@Host"):
